@@ -14,3 +14,8 @@ class SlickUserDao(val schema: SlickSchema, val db: JdbcBackend#Database) extend
   val users = schema.users
   private def insertOrUpdateAction(user: User): DBIO[Option[User]] = (users returning users).insertOrUpdate(user)
 }
+
+object SlickUserDao {
+  def apply(schema: SlickSchema, db: JdbcBackend#Database) =
+    new SlickUserDao(schema, db)
+}

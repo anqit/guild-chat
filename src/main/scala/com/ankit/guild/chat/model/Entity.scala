@@ -13,4 +13,4 @@ case class Room(name: String, id: Option[Int] = None) /* extends Entity[Room, In
 
 case class RoomMembership(roomId: Int, user: String)
 
-case class Message(roomId: Int, author: String, message: String, timestamp: Instant)
+case class Message(roomId: Int, author: String, message: String, timestamp: Option[Instant] = None)

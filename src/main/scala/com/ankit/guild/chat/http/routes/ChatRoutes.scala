@@ -4,16 +4,16 @@ import akka.http.scaladsl.model.ws.{BinaryMessage, Message, TextMessage}
 import akka.http.scaladsl.server.Directives
 import akka.stream.Materializer
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, MergeHub, Sink}
-import com.ankit.guild.chat.http.sockets.{MessageProcesser, SocketMessage}
-import com.ankit.guild.chat.service.RoomService
+import com.ankit.guild.chat.http.sockets.{SocketMessageProcesser, SocketMessage}
+import com.ankit.guild.chat.service.{MessageService, RoomService}
 import spray.json._
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
-class WebSocketRoutes(roomService: RoomService)(implicit ex: ExecutionContext, mat: Materializer) extends RouteProvider with Directives {
+class ChatRoutes(val roomService: RoomService, val messageService: MessageService)(implicit ex: ExecutionContext, mat: Materializer) extends RouteProvider with Directives {
 //  val roomSinkMap: scala.collection.mutable.Map[Int, (Sink[TextMessage, NotUsed], Source[TextMessage, NotUsed])] = scala.collection.mutable.Map()
-  val messageProcessor = new MessageProcesser(roomService)
+  val messageProcessor = new SocketMessageProcesser(roomService, messageService)
 
   val messageFlow = Flow[Message].mapAsync(1) {
       case tm: TextMessage =>
@@ -25,7 +25,7 @@ class WebSocketRoutes(roomService: RoomService)(implicit ex: ExecutionContext, m
           .map(SocketMessage.toWebSocketMessage)
       case bm: BinaryMessage =>
         bm.dataStream.runWith(Sink.ignore)
-        Future.successful(SocketMessage.Error(""))
+        Future.successful(SocketMessage.Error("not handling binary messages"))
           .map(SocketMessage.toJsValue)
           .map(SocketMessage.toWebSocketMessage)
     }
@@ -53,4 +53,9 @@ class WebSocketRoutes(roomService: RoomService)(implicit ex: ExecutionContext, m
   override lazy val route = concat(
     socket
   )
+}
+
+object ChatRoutes {
+  def apply(roomService: RoomService, messageService: MessageService)(implicit ex: ExecutionContext, mat: Materializer) =
+    new ChatRoutes(roomService, messageService)
 }

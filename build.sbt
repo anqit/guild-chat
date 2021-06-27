@@ -9,7 +9,7 @@ enablePlugins(JavaAppPackaging)
 
 Compile / mainClass := Some("com.ankit.guild.chat.Main")
 
-lazy val purchasePools = (project in file("."))
+lazy val guildChat = (project in file("."))
   .settings(
     name := "guild_chat",
     // processing configs

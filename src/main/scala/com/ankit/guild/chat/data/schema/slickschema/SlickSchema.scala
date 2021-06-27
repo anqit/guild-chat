@@ -29,19 +29,19 @@ class SlickSchema(val profile: JdbcProfile) extends SlickProfileProvider {
   lazy val rooms = TableQuery[Rooms]
 
   // Room members
-  class RoomMembers(tag: Tag) extends Table[RoomMembership](tag, "room_members") {
-    def roomId = column[Int]("room_id")
-    def userName = column[String]("user")
-
-    def pk = primaryKey("room_members_pk", (roomId, userName))
-
-    def room = foreignKey("membership_room_fk", roomId, rooms)(_.id)
-    def user = foreignKey("membership_user_fk", userName, users)(_.name)
-
-    def * = (roomId, userName).mapTo[RoomMembership]
-  }
-
-  lazy val roomMembers = TableQuery[RoomMembers]
+//  class RoomMembers(tag: Tag) extends Table[RoomMembership](tag, "room_members") {
+//    def roomId = column[Int]("room_id")
+//    def userName = column[String]("user")
+//
+//    def pk = primaryKey("room_members_pk", (roomId, userName))
+//
+//    def room = foreignKey("membership_room_fk", roomId, rooms)(_.id)
+//    def user = foreignKey("membership_user_fk", userName, users)(_.name)
+//
+//    def * = (roomId, userName).mapTo[RoomMembership]
+//  }
+//
+//  lazy val roomMembers = TableQuery[RoomMembers]
 
   class Messages(tag: Tag) extends Table[Message](tag, "messages") {
     def roomId = column[Int]("room_id")
@@ -52,7 +52,7 @@ class SlickSchema(val profile: JdbcProfile) extends SlickProfileProvider {
     def room = foreignKey("message_room_fk", roomId, rooms)(_.id)
     def author = foreignKey("message_user_fk", authorName, users)(_.name)
 
-    def * = (roomId, authorName, message, timestamp).mapTo[Message]
+    def * = (roomId, authorName, message, timestamp.?).mapTo[Message]
   }
 
   lazy val messages = TableQuery[Messages]

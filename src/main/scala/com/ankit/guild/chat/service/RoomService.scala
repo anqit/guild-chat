@@ -7,4 +7,10 @@ import scala.concurrent.Future
 
 class RoomService(roomDao: RoomDao) {
   def createRoom(room: Room): Future[Option[Room]] = roomDao.createRoom(room)
+
+  def getRooms(): Future[Seq[Room]] = roomDao.getRooms()
+}
+
+object RoomService {
+  def apply(roomDao: RoomDao) = new RoomService(roomDao)
 }

@@ -8,3 +8,7 @@ import scala.concurrent.Future
 class UserService(userDao: UserDao) {
   def getOrCreate(user: User): Future[Option[User]] = userDao.getOrCreate(user)
 }
+
+object UserService {
+  def apply(userDao: UserDao) = new UserService(userDao)
+}
