@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.ws.{BinaryMessage, Message, TextMessage}
 import akka.http.scaladsl.server.Directives
 import akka.stream.Materializer
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, MergeHub, Sink}
+import com.ankit.guild.chat.http.sockets.SocketMessage.Error
 import com.ankit.guild.chat.http.sockets.{SocketMessage, SocketMessageProcesser}
 import spray.json._
 
@@ -18,6 +19,7 @@ class ChatRoutes(val messageProcessor: SocketMessageProcesser)(implicit ex: Exec
           .map(_.parseJson)
           .map(SocketMessage.fromJsValue)
           .flatMap(messageProcessor.process)
+          .recover(t => Error(t.getMessage))
           .map(SocketMessage.toJsValue)
           .map(SocketMessage.toWebSocketMessage)
       case bm: BinaryMessage =>

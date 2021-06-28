@@ -15,9 +15,10 @@ trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
 
     override def write(i: Instant): JsValue = JsString(i.toString)
   }
+
   implicit val userSupport = jsonFormat2(User)
-  implicit val roomSupport = jsonFormat2(Room)
   implicit val messageSupport = jsonFormat4(Message)
+  implicit val roomSupport = jsonFormat3(Room.apply _)
 }
 
 object JsonSupport extends JsonSupport

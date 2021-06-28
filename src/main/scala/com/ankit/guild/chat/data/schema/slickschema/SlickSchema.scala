@@ -1,6 +1,6 @@
 package com.ankit.guild.chat.data.schema.slickschema
 
-import com.ankit.guild.chat.model.{Message, Room, RoomMembership, User}
+import com.ankit.guild.chat.model.{Message, Room, /* RoomMembership,*/ User}
 import slick.jdbc.JdbcProfile
 
 import java.time.Instant
@@ -19,11 +19,14 @@ class SlickSchema(val profile: JdbcProfile) extends SlickProfileProvider {
   lazy val users = TableQuery[Users]
 
   // Rooms
+  case class LiftedRoom(name: Rep[String], id: Rep[Option[Int]])
+  implicit object RoomShape extends CaseClassShape(LiftedRoom.tupled, (Room.makeEmpty _).tupled)
+
   class Rooms(tag: Tag) extends Table[Room](tag, "rooms") {
     def id = column[Int]("room_id", O.PrimaryKey, O.AutoInc)
     def name = column[String]("room_name")
 
-    def * = (name, id.?).mapTo[Room]
+    def * = LiftedRoom(name, id.?)
   }
 
   lazy val rooms = TableQuery[Rooms]
