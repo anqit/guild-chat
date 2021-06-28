@@ -3,6 +3,7 @@ package com.ankit.guild.chat.http.routes
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.http.scaladsl.server.Directives
 import akka.stream.Attributes.LogLevels
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
 
 class Routes(val roomRoutes: RoomRoutes, val userRoutes: UserRoutes, val webSocketRoutes: ChatRoutes) extends RouteProvider with Directives {
   lazy val healthCheckRoute = path("ping") {
@@ -12,12 +13,20 @@ class Routes(val roomRoutes: RoomRoutes, val userRoutes: UserRoutes, val webSock
   }
 
   override lazy val route = logRequestResult("top-level", LogLevels.Info) {
-    concat(
-      healthCheckRoute,
-      pathPrefix("rooms") { roomRoutes },
-      pathPrefix("users") { userRoutes },
-      pathPrefix("chat") { webSocketRoutes },
-    )
+    cors() {
+      concat(
+        healthCheckRoute,
+        pathPrefix("rooms") {
+          roomRoutes
+        },
+        pathPrefix("users") {
+          userRoutes
+        },
+        pathPrefix("chat") {
+          webSocketRoutes
+        },
+      )
+    }
   }
 }
 
