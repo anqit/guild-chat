@@ -10,10 +10,10 @@ class SlickSchema(val profile: JdbcProfile) extends SlickProfileProvider {
 
   // Users
   class Users(tag: Tag) extends Table[User](tag, "users") {
-//    def id = column[Int]("user_id", O.PrimaryKey, O.AutoInc)
-    def name = column[String]("user_name", O.PrimaryKey)
+    def id = column[Int]("user_id", O.PrimaryKey, O.AutoInc)
+    def name = column[String]("user_name", O.Unique)
 
-    def * = (name/*, id.?*/).mapTo[User]
+    def * = (name, id.?).mapTo[User]
   }
 
   lazy val users = TableQuery[Users]

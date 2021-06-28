@@ -37,6 +37,9 @@ lazy val guildChat = (project in file("."))
       "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
     ),
 
+    // akka-http cors extension
+    libraryDependencies += "ch.megard" %% "akka-http-cors" % "1.1.1",
+
     // unit tests
     libraryDependencies ++= Seq(
       "org.scalactic" %% "scalactic" % "3.2.9",
