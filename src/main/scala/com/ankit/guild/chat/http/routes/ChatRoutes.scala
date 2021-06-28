@@ -4,17 +4,14 @@ import akka.http.scaladsl.model.ws.{BinaryMessage, Message, TextMessage}
 import akka.http.scaladsl.server.Directives
 import akka.stream.Materializer
 import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, MergeHub, Sink}
-import com.ankit.guild.chat.http.sockets.{SocketMessageProcesser, SocketMessage}
-import com.ankit.guild.chat.service.{MessageService, RoomService}
+import com.ankit.guild.chat.http.sockets.{SocketMessage, SocketMessageProcesser}
 import spray.json._
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
-class ChatRoutes(val roomService: RoomService, val messageService: MessageService)(implicit ex: ExecutionContext, mat: Materializer) extends RouteProvider with Directives {
+class ChatRoutes(val messageProcessor: SocketMessageProcesser)(implicit ex: ExecutionContext, mat: Materializer) extends RouteProvider with Directives {
 //  val roomSinkMap: scala.collection.mutable.Map[Int, (Sink[TextMessage, NotUsed], Source[TextMessage, NotUsed])] = scala.collection.mutable.Map()
-  val messageProcessor = new SocketMessageProcesser(roomService, messageService)
-
   val messageFlow = Flow[Message].mapAsync(1) {
       case tm: TextMessage =>
         tm.toStrict(2.seconds).map(_.text)
@@ -56,6 +53,6 @@ class ChatRoutes(val roomService: RoomService, val messageService: MessageServic
 }
 
 object ChatRoutes {
-  def apply(roomService: RoomService, messageService: MessageService)(implicit ex: ExecutionContext, mat: Materializer) =
-    new ChatRoutes(roomService, messageService)
+  def apply(messageProcessor: SocketMessageProcesser)(implicit ex: ExecutionContext, mat: Materializer) =
+    new ChatRoutes(messageProcessor)
 }

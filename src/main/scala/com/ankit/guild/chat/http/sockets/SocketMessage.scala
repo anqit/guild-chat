@@ -3,13 +3,14 @@ package com.ankit.guild.chat.http.sockets
 import akka.http.scaladsl.model.ws.TextMessage
 import com.ankit.guild.chat.http.json.JsonSupport._
 import com.ankit.guild.chat.model.{Message, Room}
-import spray.json.{JsArray, JsObject, JsString, JsValue, enrichAny}
+import spray.json.{JsArray, JsObject, JsString, JsValue, JsonFormat, enrichAny}
 
 sealed trait SocketMessage
 
 object SocketMessage {
   // incoming
   case class CreateRoom(room: Room) extends SocketMessage
+  case class GetRooms() extends SocketMessage
 //  case class JoinRoom(roomId: Int, user: String) extends SocketMessage
 //  case class LeaveRoom()
   case class SendChatMessage(msg: Message) extends SocketMessage
@@ -17,6 +18,7 @@ object SocketMessage {
 
   // outgoing
   case class RoomCreated(room: Room) extends SocketMessage
+  case class RoomsRetrieved(rooms: Seq[Room]) extends SocketMessage
   case class MessageSent(message: Message) extends SocketMessage
   case class Error(reason: String) extends SocketMessage
 
@@ -34,6 +36,7 @@ object SocketMessage {
 
   def fromCmdAndArgsObj(cmd: String, params: JsObject): SocketMessage = cmd match {
     case CreateRoomAction => CreateRoom(params.convertTo[Room])
+    case GetRoomsAction => GetRooms()
     case SendMessageAction => SendChatMessage(params.convertTo[Message])
     case RoomCreatedAction => RoomCreated(params.convertTo[Room])
     case MessageSentAction => MessageSent(params.convertTo[Message])
@@ -43,25 +46,33 @@ object SocketMessage {
 
   def toJsValue(message: SocketMessage): JsArray = message match {
     case CreateRoom(room) =>
-      JsArray(JsString(CreateRoomAction), room.toJson)
+      toJsValue(CreateRoomAction, room)
+    case GetRooms() =>
+      JsArray(JsString(GetRoomsAction))
     case SendChatMessage(message) =>
-      JsArray(JsString(SendMessageAction), message.toJson)
+      toJsValue(SendMessageAction, message)
     case RoomCreated(room) =>
-      JsArray(JsString(RoomCreatedAction), room.toJson)
+      toJsValue(RoomCreatedAction, room)
+    case RoomsRetrieved(rooms) =>
+      toJsValue(RoomsRetrievedAction, rooms)
     case MessageSent(message) =>
-      JsArray(JsString(MessageSentAction), message.toJson)
+      toJsValue(MessageSentAction, message)
     case Error(reason) =>
       JsArray(JsString(ErrorAction), JsObject("reason" -> JsString(reason)))
   }
+
+  def toJsValue[A: JsonFormat](action: String, param: A) = JsArray(JsString(action), param.toJson)
 
   def toWebSocketMessage(messageJson: JsArray): TextMessage = TextMessage(messageJson.toString())
 }
 
 case object Actions {
   val CreateRoomAction = "create_room"
+  val GetRoomsAction = "get_rooms"
   val SendMessageAction = "send_message"
 
   val RoomCreatedAction = "room_created"
+  val RoomsRetrievedAction = "rooms_retrieved"
   val MessageSentAction = "message_sent"
   val ErrorAction = "error"
 }

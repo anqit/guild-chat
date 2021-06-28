@@ -6,6 +6,7 @@ import com.ankit.guild.chat.data.dao.slickdao.{SlickMessageDao, SlickRoomDao, Sl
 import com.ankit.guild.chat.data.schema.slickschema.SlickSchema
 import com.ankit.guild.chat.http.Server
 import com.ankit.guild.chat.http.routes.{ChatRoutes, RoomRoutes, Routes, UserRoutes}
+import com.ankit.guild.chat.http.sockets.SocketMessageProcesser
 import com.ankit.guild.chat.service.{MessageService, RoomService, UserService}
 import com.typesafe.config.ConfigFactory
 import slick.basic.DatabaseConfig
@@ -36,10 +37,12 @@ object Main extends App {
   val userService = UserService(userDao)
   val messageService = MessageService(messageDao)
 
+  val socketMessageProcesser = SocketMessageProcesser(roomService, messageService)
+
   // routes
   val roomRoutes = RoomRoutes(roomService)
   val userRoutes = UserRoutes(userService)
-  val chatRoutes = ChatRoutes(roomService, messageService)
+  val chatRoutes = ChatRoutes(socketMessageProcesser)
   val routes = Routes(roomRoutes, userRoutes, chatRoutes)
 
   val server = Server(routes)
