@@ -20,6 +20,15 @@ services:
     - "8080:8080"
     environment:
       DB_PROFILE: "local.docker.postgres"
+  guild-chat-frontend:
+    image: anqit/guild-chat-front:latest
+    depends_on:
+      - "guild-chat-server"
+    ports:
+      - "5000:5000"
+    environment:
+      API_ENDPOINT: "guild-chat-server:8080"
+
 volumes:
   db_data:
     driver: local
