@@ -11,27 +11,11 @@ services:
       POSTGRES_USER: ankit
       POSTGRES_PASSWORD: supersecret
       POSTGRES_DB: guild-chat
-  graphql-engine:
-    image: hasura/graphql-engine:v2.0.0-alpha.10
-    ports:
-    - "8081:8080"
-    depends_on:
-    - "postgres"
-    restart: always
-    environment:
-      HASURA_GRAPHQL_DATABASE_URL: postgres://ankit:supersecret@postgres:5432/guild-chat
-      ## enable the console served by server
-      HASURA_GRAPHQL_ENABLE_CONSOLE: "false" # set to "false" to disable console
-      ## enable debugging mode. It is recommended to disable this in production
-      HASURA_GRAPHQL_DEV_MODE: "true"
-      HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
-      ## uncomment next line to set an admin secret
-      # HASURA_GRAPHQL_ADMIN_SECRET: myadminsecretkey
   guild-chat-server:
     image: anqit/guild-chat:latest
     stdin_open: true
     depends_on:
-    - "graphql-engine"
+    - "postgres"
     ports:
     - "8080:8080"
     environment:

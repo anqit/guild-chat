@@ -28,7 +28,7 @@ class SlickUserDao(val schema: SlickSchema, val db: JdbcBackend#Database)(implic
 
   private def createAction(user: User) =
     ((users returning users.map(_.id) into ((u, i) => u.copy(id = Some(i)))) += user) map {
-      case u => Some(u)
+      case u: User => Some(u)
       case _ => None
     }
 }

@@ -9,7 +9,7 @@ import java.time.Instant
 import scala.concurrent.{ExecutionContext, Future}
 
 class SlickMessageDao(val schema: SlickSchema, val db: JdbcBackend#Database)(implicit ex: ExecutionContext) extends MessageDao {
-  override def getMessagesForRoom(roomId: Int): Future[Seq[Message]] = db.run(getMessagesForRoomAction(roomId))
+  override def getMessagesForRoom(roomId: Int): Future[Seq[Message]] = db.run(getMessagesForRoomAction(roomId, Some(10)))
   override def insertMessage(message: Message): Future[Option[Message]] = db.run(insertAction(message))
 
   import schema.profile.api._
@@ -19,7 +19,14 @@ class SlickMessageDao(val schema: SlickSchema, val db: JdbcBackend#Database)(imp
     case _ => None
   }
 
-  def getMessagesForRoomAction(roomId: Int): DBIO[Seq[Message]] = messages.filter(_.roomId === roomId).result
+  def getMessagesForRoomAction(roomId: Int, limit: Option[Int] = None): DBIO[Seq[Message]] = {
+    val q = messages.filter(_.roomId === roomId).sortBy(_.timestamp.desc)
+
+    limit match {
+      case Some(l) =>q.take(l).result
+      case _ => q.result
+    }
+  }
 }
 
 object SlickMessageDao {
