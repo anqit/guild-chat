@@ -52,6 +52,9 @@ class SlickSchema(val profile: JdbcProfile) extends SlickProfileProvider {
     def message = column[String]("message")
     def timestamp = column[Instant]("timestamp")
 
+    def roomIndex = index("messages_room_idx", roomId)
+    def timestampIndex = index("messages_timestamp_idx", timestamp)
+
     def room = foreignKey("message_room_fk", roomId, rooms)(_.id)
     def author = foreignKey("message_user_fk", authorName, users)(_.name)
 
