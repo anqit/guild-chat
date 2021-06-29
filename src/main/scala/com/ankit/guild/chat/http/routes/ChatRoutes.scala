@@ -12,7 +12,6 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
 class ChatRoutes(val messageProcessor: SocketMessageProcesser)(implicit ex: ExecutionContext, mat: Materializer) extends RouteProvider with Directives {
-//  val roomSinkMap: scala.collection.mutable.Map[Int, (Sink[TextMessage, NotUsed], Source[TextMessage, NotUsed])] = scala.collection.mutable.Map()
   val messageFlow = Flow[Message].mapAsync(1) {
       case tm: TextMessage =>
         tm.toStrict(2.seconds).map(_.text)
@@ -30,18 +29,6 @@ class ChatRoutes(val messageProcessor: SocketMessageProcesser)(implicit ex: Exec
     }
 
   val (sink, source) = MergeHub.source[Message].via(messageFlow).toMat(BroadcastHub.sink[Message])(Keep.both).run()
-/*
-  def createRoom(room: Room) = {
-    val newRoom = roomService.createRoom(room) map {
-      case Some(Room(_, Some(roomId))) =>
-        val bcSink = BroadcastHub.sink[TextMessage]
-        val mhSource = MergeHub.source[TextMessage]
-        val (sink, source) = mhSource.via(messageFlow).toMat(bcSink)(Keep.both).run()
-        roomSinkMap += (roomId, (sink, source))
-
-      case _ => throw new Exception("couldn't create room")
-    }
-  }*/
 
   val socketHandler = Flow.fromSinkAndSource(sink, source)
 
