@@ -64,6 +64,20 @@ object SocketMessage {
   def toJsValue[A: JsonFormat](action: String, param: A) = JsArray(JsString(action), param.toJson)
 
   def toWebSocketMessage(messageJson: JsArray): TextMessage = TextMessage(messageJson.toString())
+
+  def isGlobalResponse(socketMessage: SocketMessage): Boolean = socketMessage match {
+    case CreateRoom(_) => true
+    case GetRooms() => false
+    //  case JoinRoom(_, _) => false
+    //  case LeaveRoom() => false
+    case SendChatMessage(_) => true
+
+    // outgoing
+    case RoomCreated(_) => true
+    case RoomsRetrieved(_) => false
+    case MessageSent(_) => true
+    case Error(_) => true
+  }
 }
 
 case object Actions {
