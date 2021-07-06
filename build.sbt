@@ -1,5 +1,5 @@
 ThisBuild / organization := "com.ankit"
-ThisBuild / version := "0.1"
+ThisBuild / version := "0.2"
 ThisBuild / scalaVersion := "2.13.3"
 
 val AkkaVersion = "2.6.13"
