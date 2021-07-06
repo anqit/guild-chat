@@ -3,8 +3,8 @@ package com.ankit.guild.chat.http.routes
 import akka.NotUsed
 import akka.http.scaladsl.model.ws.{BinaryMessage, Message, TextMessage}
 import akka.http.scaladsl.server.{Directives, Route}
-import akka.stream.scaladsl.{Broadcast, BroadcastHub, Flow, GraphDSL, Keep, Merge, MergeHub, Sink, Source}
-import akka.stream.{FlowShape, Materializer, SourceShape}
+import akka.stream.scaladsl.{Broadcast, BroadcastHub, Flow, GraphDSL, Keep, Merge, MergeHub, Sink}
+import akka.stream.{FlowShape, Materializer}
 import com.ankit.guild.chat.http.sockets.SocketMessage.Error
 import com.ankit.guild.chat.http.sockets.{SocketMessage, SocketMessageProcesser}
 import spray.json._
@@ -19,46 +19,44 @@ class ChatRoutes(val messageProcessor: SocketMessageProcesser)(implicit ex: Exec
         .map(_.parseJson)
         .map(SocketMessage.fromJsValue)
         .flatMap(messageProcessor.process)
+        .recover(t => Error(t.getMessage))
     case bm: BinaryMessage =>
       bm.dataStream.runWith(Sink.ignore)
       Future.successful(SocketMessage.Error("not handling binary messages"))
   }
 
-  def outgoingFlow(filter: SocketMessage => Boolean): Flow[SocketMessage, Message, NotUsed] = Flow[SocketMessage]
-    .filter(filter)
-    .recover(t => Error(t.getMessage))
+  val outgoingFlow: Flow[SocketMessage, Message, NotUsed] = Flow[SocketMessage]
     .map(SocketMessage.toJsValue)
     .map(SocketMessage.toWebSocketMessage)
 
-  //        incoming      internal processed message source
-  val (globalMergingSink, internalBroadcastingSource) = MergeHub.source[Message]
-    .via(incomingFlow)
-    .toMat(BroadcastHub.sink[SocketMessage])(Keep.both).run()
+  val (globalMerger, globalBroadcaster) = MergeHub.source[SocketMessage]
+    .via(outgoingFlow)
+    .toMat(BroadcastHub.sink[Message])(Keep.both).run()
 
-  //       global messages
-  val globalBroadcastingSource = internalBroadcastingSource
-    .via(outgoingFlow(SocketMessage.isGlobalResponse))
-    .toMat(BroadcastHub.sink[Message])(Keep.right).run()
-
-  def getCombinedSource() = {
-    val graph = GraphDSL.create() { implicit b =>
+  def getWebSocketFlow() = {
+    val graph = GraphDSL.create(incomingFlow) { implicit b => processed =>
       import GraphDSL.Implicits._
 
-      // private messages
-      val privateFlow = b.add(outgoingFlow(sm => !SocketMessage.isGlobalResponse(sm)))
+      val privateFlow = b.add(Flow[SocketMessage].filter(sm => !SocketMessage.isGlobalResponse(sm)))
+      val globalFlow = b.add(Flow[SocketMessage].filter(SocketMessage.isGlobalResponse))
+
+      val splitter = b.add(Broadcast[SocketMessage](2))
       val merger = b.add(Merge[Message](2))
 
-      internalBroadcastingSource ~> privateFlow ~> merger.in(0)
-      globalBroadcastingSource ~> merger.in(1)
+                          splitter.out(0) ~> globalFlow ~> globalMerger
+                                                       globalBroadcaster ~> merger.in(0)
+      processed ~> splitter
+                          splitter.out(1) ~> privateFlow ~> outgoingFlow ~> merger.in(1)
 
-      SourceShape(merger.out)
+
+      FlowShape(processed.in, merger.out)
     }
 
-    Source.fromGraph(graph)
+    Flow.fromGraph(graph)
   }
 
   private lazy val socket = pathEndOrSingleSlash {
-    handleWebSocketMessages(Flow.fromSinkAndSource(globalMergingSink, getCombinedSource()))
+    handleWebSocketMessages(getWebSocketFlow())
   }
 
   override lazy val route: Route = concat(
